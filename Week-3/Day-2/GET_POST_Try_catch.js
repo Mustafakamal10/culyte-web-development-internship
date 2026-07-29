@@ -79,7 +79,7 @@ if (statusCode === 200) {
 // Request Body
 
 const requestBody = {
-    name: "Mustafa",
+    name: "Murtaza",
     course: "Web Development"
 };
 
