@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StudentList from "./StudentList";
 
 
 // React is a JavaScript library used to build user interfaces.
@@ -73,7 +74,7 @@ function App() {
 function Student(props) {
 
     return (
-
+<>
         <div>
 
             <h3>{props.studentName}</h3>
@@ -81,6 +82,9 @@ function Student(props) {
             <p>{props.semester}</p>
 
         </div>
+
+        <StudentList/>
+        </>
 
     );
 
