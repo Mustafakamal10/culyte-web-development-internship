@@ -76,15 +76,15 @@ function Student(props) {
 
     return (
 <>
-        <div>
+        {/* <div>
 
             <h3>{props.studentName}</h3>
 
             <p>{props.semester}</p>
 
-        </div>
-
-        <StudentList/>
+        </div> */}
+{/* 
+        <StudentList/> */}
         <UserList/>
         </>
 
