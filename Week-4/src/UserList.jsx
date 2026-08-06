@@ -3,14 +3,51 @@ import { useEffect, useState } from "react";
 function UserList() {
 
     const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
     useEffect(() => {
 
         fetch("https://jsonplaceholder.typicode.com/users")
-            .then((response) => response.json())
-            .then((data) => setUsers(data));
+            .then((response) => {
+
+                if (!response.ok) {
+                    throw new Error("Failed to fetch users");
+                }
+
+                return response.json();
+
+            })
+            .then((data) => {
+                setUsers(data);
+                setLoading(false);
+            })
+            .catch((error) => {
+                setError(error.message);
+                setLoading(false);
+            });
 
     }, []);
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <h1 className="text-3xl font-bold text-blue-600">
+                    Loading...
+                </h1>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-100">
+                <h1 className="text-3xl font-bold text-red-600">
+                    {error}
+                </h1>
+            </div>
+        );
+    }
 
     return (
 
