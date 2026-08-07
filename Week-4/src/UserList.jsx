@@ -6,6 +6,10 @@ function UserList() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    // Fetching data inside useEffect works well for small projects.
+    // As the app grows, handling loading, errors, caching, and refetching
+    // becomes repetitive. Libraries like TanStack Query make this easier.
+
     useEffect(() => {
 
         fetch("https://jsonplaceholder.typicode.com/users")
@@ -53,9 +57,13 @@ function UserList() {
 
         <div className="min-h-screen bg-gray-100 p-6">
 
-            <h1 className="text-3xl font-bold text-center mb-8">
+            <h1 className="text-3xl font-bold text-center mb-2">
                 User Directory
             </h1>
+
+            <p className="text-center text-gray-600 mb-8">
+                Total Users: {users.length}
+            </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
@@ -108,7 +116,9 @@ function UserList() {
                             className="w-full border rounded-md p-2 mt-5 focus:outline-none focus:border-blue-500"
                         />
 
-                        <button className="w-full mt-4 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600">
+                        <button
+                            className="w-full mt-4 bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600"
+                        >
                             View Profile
                         </button>
 
