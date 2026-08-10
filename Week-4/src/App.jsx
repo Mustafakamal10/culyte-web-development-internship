@@ -1,7 +1,7 @@
 import { useState } from "react";
 import StudentList from "./StudentList";
 import UserList from "./UserList";
-
+import Search from "./Search";
 
 // React is a JavaScript library used to build user interfaces.
 
@@ -86,7 +86,13 @@ function Student(props) {
 {/* 
         <StudentList/> */}
         <UserList/>
+
+
+
+        <Search/>
         </>
+
+    
 
     );
 
