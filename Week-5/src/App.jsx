@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Search from "../src/Day-1/Search";
 import useDebounce from "../src/Day-1/useDebounce";
+import UserForm from "./Day-2_3/UserForm";
 
 function App() {
 
@@ -27,6 +28,13 @@ function App() {
             <p className="mt-5 text-gray-600">
                 Debounced Value: {debouncedSearch}
             </p>
+
+            {/* =========================
+                Week 5 - Day 2-3
+                React Hook Form + Zod
+                ========================= */}
+
+            <UserForm />
 
         </div>
     );
