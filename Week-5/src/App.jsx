@@ -3,6 +3,7 @@ import Search from "../src/Day-1/Search";
 import useDebounce from "../src/Day-1/useDebounce";
 import UserForm from "./Day-2_3/UserForm";
 import Day4UserForm from "./Day-4/UserForm";
+import CreateUser from "./Day-5/CreateUser";
 
 function App() {
 
@@ -45,6 +46,13 @@ function App() {
                 ========================= */}
 
             <Day4UserForm />
+
+            {/* =========================
+                Week 5 - Day 5
+                Axios Instance + Create User
+               ========================= */}
+
+            <CreateUser />
 
         </div>
     );
