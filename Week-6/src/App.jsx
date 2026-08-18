@@ -1,10 +1,16 @@
-import UserList from "./Day-1/UserList";
-
+import CreateUser from "./Day-2/CreateUser";
+import UserList from "./Day-2/UserList";
 
 function App() {
 
     return (
-        <UserList />
+        <div className="min-h-screen bg-gray-100">
+
+            <CreateUser />
+
+            <UserList />
+
+        </div>
     );
 }
 
