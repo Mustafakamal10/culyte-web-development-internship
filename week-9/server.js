@@ -1,6 +1,6 @@
 require("dotenv").config();
 const app = require("./app");
-const { sequelize, User, Task, Project, UserProject } = require("./models");
+const { sequelize, User, Task, Project, UserProject } = require("./app/models");
 
 const PORT = process.env.PORT || 5000;
 
@@ -8,19 +8,19 @@ const seedInitialData = async () => {
   const userCount = await User.count();
   if (userCount === 0) {
     await User.bulkCreate([
-      { id: 1, name: "Mustafa", email: "mustafa@example.com" },
-      { id: 2, name: "Ali", email: "ali@example.com" }
+      { id: 1, name: "Mustafa", email: "mustafa@example.com", bio: "Full stack developer intern" },
+      { id: 2, name: "Ali", email: "ali@example.com", bio: "Backend developer" }
     ]);
 
     await Task.bulkCreate([
-      { id: 1, title: "Complete database assignment", userId: 1 },
-      { id: 2, title: "Build dashboard", userId: 1 },
-      { id: 3, title: "Practice Sequelize", userId: 2 }
+      { id: 1, title: "Complete database assignment", description: "Set up Sequelize models and migrations", dueDate: new Date(), userId: 1 },
+      { id: 2, title: "Build dashboard", description: "Create frontend UI layout", dueDate: new Date(), userId: 1 },
+      { id: 3, title: "Practice Sequelize", description: "Learn associations and data types", dueDate: new Date(), userId: 2 }
     ]);
 
     await Project.bulkCreate([
-      { id: 1, name: "LMS Dashboard" },
-      { id: 2, name: "E-Commerce Dashboard" }
+      { id: 1, name: "LMS Dashboard", description: "Learning management system project" },
+      { id: 2, name: "E-Commerce Dashboard", description: "Online store management dashboard" }
     ]);
 
     await UserProject.bulkCreate([
@@ -40,7 +40,6 @@ const startServer = async () => {
       console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
-    console.log("MySQL connection failed, falling back to SQLite for active endpoint testing...");
     const { Sequelize } = require("sequelize");
     const path = require("path");
     const fallbackSequelize = new Sequelize({
@@ -49,10 +48,10 @@ const startServer = async () => {
       logging: false
     });
 
-    const FallbackUser = require("./models/user")(fallbackSequelize);
-    const FallbackTask = require("./models/task")(fallbackSequelize);
-    const FallbackProject = require("./models/project")(fallbackSequelize);
-    const FallbackUserProject = require("./models/userProject")(fallbackSequelize);
+    const FallbackUser = require("./app/models/user")(fallbackSequelize);
+    const FallbackTask = require("./app/models/task")(fallbackSequelize);
+    const FallbackProject = require("./app/models/project")(fallbackSequelize);
+    const FallbackUserProject = require("./app/models/userProject")(fallbackSequelize);
 
     FallbackUser.hasMany(FallbackTask, { foreignKey: "userId", as: "tasks" });
     FallbackTask.belongsTo(FallbackUser, { foreignKey: "userId", as: "user" });
@@ -63,17 +62,17 @@ const startServer = async () => {
     const count = await FallbackUser.count();
     if (count === 0) {
       await FallbackUser.bulkCreate([
-        { id: 1, name: "Mustafa", email: "mustafa@example.com" },
-        { id: 2, name: "Ali", email: "ali@example.com" }
+        { id: 1, name: "Mustafa", email: "mustafa@example.com", bio: "Full stack developer intern" },
+        { id: 2, name: "Ali", email: "ali@example.com", bio: "Backend developer" }
       ]);
       await FallbackTask.bulkCreate([
-        { id: 1, title: "Complete database assignment", userId: 1 },
-        { id: 2, title: "Build dashboard", userId: 1 },
-        { id: 3, title: "Practice Sequelize", userId: 2 }
+        { id: 1, title: "Complete database assignment", description: "Set up Sequelize models and migrations", dueDate: new Date(), userId: 1 },
+        { id: 2, title: "Build dashboard", description: "Create frontend UI layout", dueDate: new Date(), userId: 1 },
+        { id: 3, title: "Practice Sequelize", description: "Learn associations and data types", dueDate: new Date(), userId: 2 }
       ]);
       await FallbackProject.bulkCreate([
-        { id: 1, name: "LMS Dashboard" },
-        { id: 2, name: "E-Commerce Dashboard" }
+        { id: 1, name: "LMS Dashboard", description: "Learning management system project" },
+        { id: 2, name: "E-Commerce Dashboard", description: "Online store management dashboard" }
       ]);
       await FallbackUserProject.bulkCreate([
         { id: 1, userId: 1, projectId: 1 },
@@ -82,10 +81,10 @@ const startServer = async () => {
       ]);
     }
 
-    require("./models").User = FallbackUser;
-    require("./models").Task = FallbackTask;
-    require("./models").Project = FallbackProject;
-    require("./models").UserProject = FallbackUserProject;
+    require("./app/models").User = FallbackUser;
+    require("./app/models").Task = FallbackTask;
+    require("./app/models").Project = FallbackProject;
+    require("./app/models").UserProject = FallbackUserProject;
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
