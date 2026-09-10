@@ -3,21 +3,27 @@ module.exports = {
     await queryInterface.bulkInsert("Tasks", [
       {
         id: 1,
-        title: "Complete database assignment",
+        title: "Complete Sequelize practice",
+        description: "Practice models, associations, and queries with Sequelize",
+        dueDate: new Date(),
         userId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         id: 2,
-        title: "Build dashboard",
+        title: "Build database relationships",
+        description: "Implement one-to-many and many-to-many associations",
+        dueDate: new Date(),
         userId: 1,
         createdAt: new Date(),
         updatedAt: new Date()
       },
       {
         id: 3,
-        title: "Practice Sequelize",
+        title: "Test MySQL connection",
+        description: "Verify MySQL connection using mysql2 and environment variables",
+        dueDate: new Date(),
         userId: 2,
         createdAt: new Date(),
         updatedAt: new Date()
