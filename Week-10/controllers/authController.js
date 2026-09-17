@@ -9,13 +9,13 @@ const register = async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Please provide all required fields"
+        message: "Please provide all required fields (name, email, password)"
       });
     }
 
     const existingUser = userModel.findByEmail(email);
     if (existingUser) {
-      return res.status(400).json({
+      return res.status(409).json({
         success: false,
         message: "User already exists with this email"
       });
@@ -32,7 +32,7 @@ const register = async (req, res) => {
 
     const token = jwt.sign(
       { id: newUser.id, email: newUser.email },
-      process.env.JWT_SECRET || "culyte_week10_super_secret_key_2026",
+      process.env.JWT_SECRET || "week10_secret_key",
       { expiresIn: "1h" }
     );
 
@@ -61,7 +61,7 @@ const login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Please provide all required fields"
+        message: "Please provide both email and password"
       });
     }
 
@@ -83,7 +83,7 @@ const login = async (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email },
-      process.env.JWT_SECRET || "culyte_week10_super_secret_key_2026",
+      process.env.JWT_SECRET || "week10_secret_key",
       { expiresIn: "1h" }
     );
 

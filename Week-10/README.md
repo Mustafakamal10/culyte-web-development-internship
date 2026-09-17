@@ -1,51 +1,10 @@
-# Week-10: CORS Configuration & API Testing with Postman
+# Week 10 — Express Middleware, JWT Authentication & bcryptjs
 
-## Overview
-
-Welcome to Week-10 of the Culyte Web Development Internship. This module focuses on:
-1. Understanding and configuring **CORS** (Cross-Origin Resource Sharing).
-2. Building clean and secure **Authentication APIs** (Register, Login, Profile).
-3. Protecting routes with **JWT (JSON Web Tokens)**.
-4. Handling **Success and Failure cases** gracefully.
-5. Testing all endpoints and edge cases with **Postman**.
+This project demonstrates backend authentication and middleware architecture in Node.js and Express. It covers request processing via custom middleware, password hashing using `bcryptjs`, token-based authentication using JSON Web Tokens (`jsonwebtoken`), protected routes, and API testing with Postman.
 
 ---
 
-## 1. What is CORS?
-
-**CORS** stands for **Cross-Origin Resource Sharing**. It is a browser security mechanism (enforced by the Same-Origin Policy) that controls how web pages running on one origin (domain, protocol, or port) can request resources from a different origin.
-
-An origin is defined by three parts:
-* **Protocol** (e.g., `http://` or `https://`)
-* **Host/Domain** (e.g., `localhost` or `example.com`)
-* **Port** (e.g., `:5173` or `:5000`)
-
-If any of these three elements differ between the frontend and backend, the request is considered **cross-origin**.
-
----
-
-## 2. Why is CORS Needed?
-
-By default, web browsers block web pages from making AJAX / fetch / Axios requests to a different origin to protect users from malicious attacks (such as Cross-Site Request Forgery or unauthorized data access).
-
-When your frontend application (e.g., running on `http://localhost:5173`) attempts to call your backend server (e.g., running on `http://localhost:5000`), the browser sends a preflight `OPTIONS` request or checks headers to see if the server permits this communication.
-
-Without CORS configuration on the backend, the browser blocks the response and throws a CORS error. By configuring CORS on the backend using the `cors` middleware, we explicitly tell the browser that requests from our frontend origin are trusted.
-
----
-
-## 3. How Frontend and Backend Communicate
-
-1. **User Action**: The user submits a form (e.g., Register or Login) in the frontend application on `http://localhost:5173`.
-2. **HTTP Request**: The frontend makes an HTTP request (`fetch` or `axios`) to `http://localhost:5000/api/auth/...`.
-3. **CORS Validation**: The Express backend evaluates incoming origin headers using the `cors` package. If matched, it sets appropriate `Access-Control-Allow-Origin` response headers.
-4. **Request Processing**: Express routes the request to controller logic, processes data, hashes passwords or verifies tokens, and generates a response.
-5. **JSON Response**: Backend returns a structured JSON response with an appropriate HTTP status code (e.g., `200 OK`, `201 Created`, `400 Bad Request`, `401 Unauthorized`).
-6. **Token Handling**: For protected routes, the frontend stores the returned JWT token and includes it in subsequent requests via the `Authorization: Bearer <token>` header.
-
----
-
-## 4. Project Structure
+## 📁 Project Structure
 
 ```text
 Week-10/
@@ -53,159 +12,175 @@ Week-10/
 │   └── corsOptions.js
 ├── controllers/
 │   └── authController.js
-├── middleware/
-│   └── authMiddleware.js
+├── middlewares/
+│   ├── authJwt.js
+│   └── logger.js
 ├── models/
 │   └── userModel.js
 ├── postman/
 │   └── Week-10-API-Collection.json
-├── routes/
-│   └── authRoutes.js
 ├── .env
 ├── .env.example
-├── .gitignore
 ├── app.js
+├── server.js
 ├── package.json
-├── README.md
-└── server.js
+└── README.md
 ```
 
 ---
 
-## 5. How to Start the Backend
+## 🚀 Core Concepts
 
-### Step 1: Navigate to Week-10
-```bash
-cd Week-10
+### 1. Express Middleware
+
+Middleware functions in Express intercept incoming HTTP requests before they reach route handlers. They have access to the `req` (request) object, `res` (response) object, and the `next` function in the application’s request-response cycle.
+
+```text
+Request
+   ↓
+Middleware
+   ↓
+Route Handler
+   ↓
+Response
 ```
 
-### Step 2: Install Dependencies
+- **What middleware is:** A function that executes during the lifecycle of an Express request (e.g., logging, authentication, request parsing).
+- **How `next()` works:** Calling `next()` passes control to the next middleware function or route handler in the stack. If `next()` is omitted and no response is sent, the request hangs.
+
+---
+
+### 2. Password Hashing with bcryptjs
+
+Storing plain-text passwords is a severe security risk. If a database is compromised, all user passwords would be exposed.
+
+- **Why passwords are hashed:** Hashing converts plain-text passwords into an irreversible cryptographic hash string using salt rounds.
+- **`bcrypt.hash(password, salt)`:** Used during user registration to generate a secure hash before storing in the database.
+- **`bcrypt.compare(password, hashedPassword)`:** Used during user login to check if the entered plain-text password matches the stored hash without ever decrypting it.
+
+---
+
+### 3. JSON Web Token (JWT) Authentication
+
+JWT is a compact, URL-safe means of representing claims to be transferred between two parties.
+
+- **Login / Token Generation:** When a user successfully logs in, `jwt.sign()` generates a signed token containing user identifiers (`id`, `email`) and an expiration time.
+- **Protected Route Verification:** For protected routes, the client includes the token in the `Authorization: Bearer <token>` header. The `authJwt.js` middleware calls `jwt.verify()` to validate the token's signature and expiration, attaching the decoded user object to `req.user`.
+
+---
+
+### 4. Complete Authentication Flow
+
+```text
+Register Flow:
+User Input (name, email, password)
+        ↓
+Validate Required Fields
+        ↓
+Password → bcrypt.hash()
+        ↓
+Save User to Database
+        ↓
+Generate JWT Token & Return 201 Created
+
+Login Flow:
+User Input (email, password)
+        ↓
+Find User by Email
+        ↓
+Password → bcrypt.compare()
+        ↓
+Generate JWT Token via jwt.sign()
+        ↓
+Client Receives Token in Response (200 OK)
+
+Protected Route Flow:
+Client Request with "Authorization: Bearer <token>"
+        ↓
+middlewares/authJwt.js Middleware
+        ↓
+jwt.verify(token, JWT_SECRET)
+        ↓
+Attach user to req.user & Call next()
+        ↓
+Protected Route Handler (e.g. GET /api/auth/profile)
+        ↓
+Return User Profile Data (200 OK)
+```
+
+---
+
+## 🛠️ API Endpoints
+
+| Method | Endpoint | Description | Auth Required | Status Codes |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/register` | Register a new user | No | `201`, `400`, `409`, `500` |
+| `POST` | `/api/auth/login` | Login user & receive JWT token | No | `200`, `400`, `401`, `500` |
+| `GET` | `/api/auth/profile` | Get authenticated user profile | Yes (`Bearer <token>`) | `200`, `401`, `404`, `500` |
+
+---
+
+## ⚙️ Setup & Installation
+
+### 1. Install Dependencies
+
 ```bash
+cd Week-10
 npm install
 ```
 
-### Step 3: Configure Environment Variables
-Verify `.env` has the following variables:
+### 2. Configure Environment Variables
+
+Create or update `.env`:
+
 ```env
 PORT=5000
+JWT_SECRET=week10_secret_key
 CLIENT_ORIGIN=http://localhost:5173
-JWT_SECRET=culyte_week10_super_secret_key_2026
 ```
 
-### Step 4: Run the Server
-* Production / standard start:
+### 3. Run the Server
+
 ```bash
+# Production mode
 npm start
-```
-* Development mode (auto-restart with nodemon):
-```bash
+
+# Development mode (with auto-reload)
 npm run dev
 ```
 
-The server will start listening at: `http://localhost:5000`
-
 ---
 
-## 6. Available API Endpoints
+## 📮 Testing with Postman
 
-| Method | Endpoint | Description | Auth Required |
-|---|---|---|---|
-| `POST` | `/api/auth/register` | Register a new user account | No |
-| `POST` | `/api/auth/login` | Login with email and password | No |
-| `GET` | `/api/auth/profile` | Get logged-in user profile details | Yes (Bearer Token) |
+Import `postman/Week-10-API-Collection.json` into Postman.
 
----
+### Collection Layout
 
-## 7. How to Test APIs with Postman
+```text
+Auth
+├── Register
+├── Login
+└── Profile
 
-### Import Collection
-1. Open Postman.
-2. Click **Import** in the top left.
-3. Select `Week-10/postman/Week-10-API-Collection.json`.
-4. The **Week-10 API Collection** will appear with organized folders: `Auth`, `Protected Routes`, and `Failure Cases`.
+Middleware / Authentication Failure Cases
+├── Profile - No Token
+├── Profile - Invalid Token
+├── Login - Wrong Password
+└── Register - Duplicate Email
+```
 
-### Step-by-Step Testing Flow
+### Automatic Token Handling in Postman
 
-#### 1. Register User
-* **Method**: `POST`
-* **URL**: `http://localhost:5000/api/auth/register`
-* **Body (JSON)**:
-  ```json
-  {
-    "name": "Mustafa Kamal",
-    "email": "mustafa@example.com",
-    "password": "Password123"
-  }
-  ```
-* **Expected Status**: `201 Created`
-* **Response**:
-  ```json
-  {
-    "success": true,
-    "message": "User registered successfully",
-    "token": "eyJhbGciOi...",
-    "user": {
-      "id": 1,
-      "name": "Mustafa Kamal",
-      "email": "mustafa@example.com"
+The **Login** request has a built-in test script:
+
+```javascript
+if (pm.response.code === 200) {
+    var jsonData = pm.response.json();
+    if (jsonData.token) {
+        pm.collectionVariables.set("token", jsonData.token);
     }
-  }
-  ```
+}
+```
 
-#### 2. Login User
-* **Method**: `POST`
-* **URL**: `http://localhost:5000/api/auth/login`
-* **Body (JSON)**:
-  ```json
-  {
-    "email": "mustafa@example.com",
-    "password": "Password123"
-  }
-  ```
-* **Expected Status**: `200 OK`
-* **Response**:
-  ```json
-  {
-    "success": true,
-    "message": "Login successful",
-    "token": "eyJhbGciOi...",
-    "user": {
-      "id": 1,
-      "name": "Mustafa Kamal",
-      "email": "mustafa@example.com"
-    }
-  }
-  ```
-
-#### 3. Access Protected Profile
-* **Method**: `GET`
-* **URL**: `http://localhost:5000/api/auth/profile`
-* **Headers**:
-  * `Authorization`: `Bearer <token_from_login_or_register>`
-* **Expected Status**: `200 OK`
-* **Response**:
-  ```json
-  {
-    "success": true,
-    "data": {
-      "id": 1,
-      "name": "Mustafa Kamal",
-      "email": "mustafa@example.com",
-      "createdAt": "2026-09-15T..."
-    }
-  }
-  ```
-
----
-
-## 8. Expected Failure Cases & Error Responses
-
-| Scenario | Request | Expected Status | Expected Error Response |
-|---|---|---|---|
-| **Missing Fields** | `POST /api/auth/register` with missing password | `400 Bad Request` | `{"success": false, "message": "Please provide all required fields"}` |
-| **Duplicate User** | `POST /api/auth/register` with existing email | `400 Bad Request` | `{"success": false, "message": "User already exists with this email"}` |
-| **Invalid Login** | `POST /api/auth/login` with incorrect password | `401 Unauthorized` | `{"success": false, "message": "Invalid email or password"}` |
-| **User Not Found** | `POST /api/auth/login` with non-existent email | `401 Unauthorized` | `{"success": false, "message": "Invalid email or password"}` |
-| **Missing Token** | `GET /api/auth/profile` without Authorization header | `401 Unauthorized` | `{"success": false, "message": "Access denied. No token provided"}` |
-| **Invalid Token** | `GET /api/auth/profile` with invalid token | `401 Unauthorized` | `{"success": false, "message": "Invalid or expired token"}` |
-| **Invalid Route** | `GET /api/unknown` | `404 Not Found` | `{"success": false, "message": "Route not found"}` |
+When you send the **Login** request, the returned token is automatically stored in the `{{token}}` variable and applied to the **Profile** request header (`Authorization: Bearer {{token}}`).

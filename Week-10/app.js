@@ -1,12 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const corsOptions = require("./config/corsOptions");
+const requestLogger = require("./middlewares/logger");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(requestLogger);
 
 app.use("/api/auth", authRoutes);
 

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "c1f7b8d4-5e6a-4932-9c12-38d5e4b67a10",
     "name": "Week-10 API Collection",
-    "description": "Postman API Collection for Week-10: CORS, Auth APIs, Protected Routes, and Failure Cases",
+    "description": "Postman API Collection for Week-10: Express Middleware, JWT Authentication, bcryptjs Password Hashing, and Failure Cases",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -11,6 +11,22 @@
       "item": [
         {
           "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -21,27 +37,41 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Mustafa Kamal\",\n  \"email\": \"mustafa@example.com\",\n  \"password\": \"Password123\"\n}"
+              "raw": "{\n  \"name\": \"Mustafa\",\n  \"email\": \"mustafa@example.com\",\n  \"password\": \"123456\"\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/auth/register",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/register",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "5000",
               "path": [
                 "api",
                 "auth",
                 "register"
               ]
             },
-            "description": "Register a new user account"
+            "description": "Registers a new user account with hashed password and returns JWT token."
           },
           "response": []
         },
         {
           "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.token) {",
+                  "        pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -52,30 +82,23 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"mustafa@example.com\",\n  \"password\": \"Password123\"\n}"
+              "raw": "{\n  \"email\": \"mustafa@example.com\",\n  \"password\": \"123456\"\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/auth/login",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/login",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "5000",
               "path": [
                 "api",
                 "auth",
                 "login"
               ]
             },
-            "description": "Login with registered credentials to receive a JWT token"
+            "description": "Authenticates user with bcryptjs compare and returns JWT token (automatically saved into {{token}} collection variable)."
           },
           "response": []
-        }
-      ]
-    },
-    {
-      "name": "Protected Routes",
-      "item": [
+        },
         {
           "name": "Profile",
           "request": {
@@ -83,106 +106,40 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer <YOUR_JWT_TOKEN>",
+                "value": "Bearer {{token}}",
                 "type": "text"
               }
             ],
             "url": {
-              "raw": "http://localhost:5000/api/auth/profile",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/profile",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "5000",
               "path": [
                 "api",
                 "auth",
                 "profile"
               ]
             },
-            "description": "Get logged in user profile using JWT bearer token in Authorization header"
+            "description": "Protected route requiring valid JWT token via Authorization Bearer header."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Failure Cases",
+      "name": "Middleware / Authentication Failure Cases",
       "item": [
         {
-          "name": "Missing Fields",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"mustafa@example.com\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:5000/api/auth/register",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "5000",
-              "path": [
-                "api",
-                "auth",
-                "register"
-              ]
-            },
-            "description": "Testing missing required fields (name, password) -> Expected 400 Bad Request"
-          },
-          "response": []
-        },
-        {
-          "name": "Invalid Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"mustafa@example.com\",\n  \"password\": \"WrongPassword123\"\n}"
-            },
-            "url": {
-              "raw": "http://localhost:5000/api/auth/login",
-              "protocol": "http",
-              "host": [
-                "localhost"
-              ],
-              "port": "5000",
-              "path": [
-                "api",
-                "auth",
-                "login"
-              ]
-            },
-            "description": "Testing login with wrong password -> Expected 401 Unauthorized"
-          },
-          "response": []
-        },
-        {
-          "name": "Missing Token",
+          "name": "Profile - No Token",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:5000/api/auth/profile",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/profile",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "5000",
               "path": [
                 "api",
                 "auth",
@@ -194,7 +151,7 @@
           "response": []
         },
         {
-          "name": "Invalid Token",
+          "name": "Profile - Invalid Token",
           "request": {
             "method": "GET",
             "header": [
@@ -205,24 +162,22 @@
               }
             ],
             "url": {
-              "raw": "http://localhost:5000/api/auth/profile",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/profile",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "5000",
               "path": [
                 "api",
                 "auth",
                 "profile"
               ]
             },
-            "description": "Testing protected route with invalid or malformed token -> Expected 401 Unauthorized"
+            "description": "Testing protected route with invalid token -> Expected 401 Unauthorized"
           },
           "response": []
         },
         {
-          "name": "User Not Found",
+          "name": "Login - Wrong Password",
           "request": {
             "method": "POST",
             "header": [
@@ -233,26 +188,65 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"nonexistent@example.com\",\n  \"password\": \"Password123\"\n}"
+              "raw": "{\n  \"email\": \"mustafa@example.com\",\n  \"password\": \"wrongpassword\"\n}"
             },
             "url": {
-              "raw": "http://localhost:5000/api/auth/login",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/api/auth/login",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "5000",
               "path": [
                 "api",
                 "auth",
                 "login"
               ]
             },
-            "description": "Testing login with unregistered email -> Expected 401 Unauthorized"
+            "description": "Testing login with wrong password -> Expected 401 Unauthorized"
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Duplicate Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mustafa Duplicate\",\n  \"email\": \"mustafa@example.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Testing register with already registered email -> Expected 409 Conflict"
           },
           "response": []
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
     }
   ]
 }
