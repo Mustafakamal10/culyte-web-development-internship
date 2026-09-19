@@ -2,24 +2,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
 
-const register = async (req, res) => {
+const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide all required fields (name, email, password)"
-      });
-    }
-
-    const existingUser = userModel.findByEmail(email);
-    if (existingUser) {
-      return res.status(409).json({
-        success: false,
-        message: "User already exists with this email"
-      });
-    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -27,23 +12,20 @@ const register = async (req, res) => {
     const newUser = userModel.create({
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role: "user",
+      account_status: "active"
     });
-
-    const token = jwt.sign(
-      { id: newUser.id, email: newUser.email },
-      process.env.JWT_SECRET || "week10_secret_key",
-      { expiresIn: "1h" }
-    );
 
     return res.status(201).json({
       success: true,
       message: "User registered successfully",
-      token,
       user: {
         id: newUser.id,
         name: newUser.name,
-        email: newUser.email
+        email: newUser.email,
+        role: newUser.role,
+        account_status: newUser.account_status
       }
     });
   } catch (error) {
@@ -73,6 +55,13 @@ const login = async (req, res) => {
       });
     }
 
+    if (user.account_status !== "active") {
+      return res.status(403).json({
+        success: false,
+        message: "Account is inactive"
+      });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
@@ -82,7 +71,7 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.id, role: user.role },
       process.env.JWT_SECRET || "week10_secret_key",
       { expiresIn: "1h" }
     );
@@ -94,7 +83,9 @@ const login = async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        email: user.email
+        email: user.email,
+        role: user.role,
+        account_status: user.account_status
       }
     });
   } catch (error) {
@@ -115,6 +106,8 @@ const getProfile = async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        role: user.role,
+        account_status: user.account_status,
         createdAt: user.createdAt
       }
     });
@@ -127,7 +120,8 @@ const getProfile = async (req, res) => {
 };
 
 module.exports = {
-  register,
+  signup,
+  register: signup,
   login,
   getProfile
 };

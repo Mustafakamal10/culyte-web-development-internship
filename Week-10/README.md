@@ -1,6 +1,6 @@
-# Week 10 — Express Middleware, JWT Authentication & bcryptjs
+# Week 10 — Role-Based Authorization, Account Status & Authentication Middleware
 
-This project demonstrates backend authentication and middleware architecture in Node.js and Express. It covers request processing via custom middleware, password hashing using `bcryptjs`, token-based authentication using JSON Web Tokens (`jsonwebtoken`), protected routes, and API testing with Postman.
+This project demonstrates an enterprise-grade authentication and authorization workflow in Node.js and Express. It includes request validation middleware, password hashing with `bcryptjs`, token-based authentication with `jsonwebtoken` (JWT), account status validation, and role-based access control (RBAC) for protecting admin-only routes.
 
 ---
 
@@ -11,10 +11,14 @@ Week-10/
 ├── config/
 │   └── corsOptions.js
 ├── controllers/
+│   ├── adminController.js
 │   └── authController.js
 ├── middlewares/
+│   ├── account_status.js
 │   ├── authJwt.js
-│   └── logger.js
+│   ├── logger.js
+│   ├── role.js
+│   └── verify_signup.js
 ├── models/
 │   └── userModel.js
 ├── postman/
@@ -29,94 +33,106 @@ Week-10/
 
 ---
 
-## 🚀 Core Concepts
+## 🔐 Authentication vs Authorization
 
-### 1. Express Middleware
+| Concept | Question Answered | Description | Example |
+| :--- | :--- | :--- | :--- |
+| **Authentication** | *Who are you?* | Verifies the identity of a user via credentials (email & password) and issues a signed token (JWT). | User logs in and receives a JWT token. |
+| **Authorization** | *What are you allowed to do?* | Determines whether an authenticated user has permissions to access a specific resource based on their role (`admin`, `user`). | Only users with `role: "admin"` can access `/api/admin/dashboard`. |
 
-Middleware functions in Express intercept incoming HTTP requests before they reach route handlers. They have access to the `req` (request) object, `res` (response) object, and the `next` function in the application’s request-response cycle.
+---
+
+## ⛓️ Middleware Pipeline Order
+
+Express middleware runs sequentially in a chain. For protected and role-restricted endpoints, the pipeline executes in the following order:
 
 ```text
 Request
    ↓
-Middleware
+Authentication (authJwt.js)
    ↓
-Route Handler
+Account Status (account_status.js)
    ↓
-Response
+Role Authorization (role.js)
+   ↓
+Controller / Route Handler
 ```
 
-- **What middleware is:** A function that executes during the lifecycle of an Express request (e.g., logging, authentication, request parsing).
-- **How `next()` works:** Calling `next()` passes control to the next middleware function or route handler in the stack. If `next()` is omitted and no response is sent, the request hangs.
+1. **`authJwt.js`**: Checks the `Authorization: Bearer <token>` header, verifies the JWT signature, and attaches the user to `req.user`.
+2. **`account_status.js`**: Verifies that the authenticated user's account is `active`. Returns `403 Forbidden` if `inactive`.
+3. **`role.js`**: Verifies that `req.user.role` matches the required role (`admin`). Returns `403 Forbidden` if unauthorized.
+4. **Controller**: Handles the business logic and returns the response once all security checks pass.
 
 ---
 
-### 2. Password Hashing with bcryptjs
+## 🔄 Complete System Flows
 
-Storing plain-text passwords is a severe security risk. If a database is compromised, all user passwords would be exposed.
-
-- **Why passwords are hashed:** Hashing converts plain-text passwords into an irreversible cryptographic hash string using salt rounds.
-- **`bcrypt.hash(password, salt)`:** Used during user registration to generate a secure hash before storing in the database.
-- **`bcrypt.compare(password, hashedPassword)`:** Used during user login to check if the entered plain-text password matches the stored hash without ever decrypting it.
-
----
-
-### 3. JSON Web Token (JWT) Authentication
-
-JWT is a compact, URL-safe means of representing claims to be transferred between two parties.
-
-- **Login / Token Generation:** When a user successfully logs in, `jwt.sign()` generates a signed token containing user identifiers (`id`, `email`) and an expiration time.
-- **Protected Route Verification:** For protected routes, the client includes the token in the `Authorization: Bearer <token>` header. The `authJwt.js` middleware calls `jwt.verify()` to validate the token's signature and expiration, attaching the decoded user object to `req.user`.
-
----
-
-### 4. Complete Authentication Flow
+### 1. Signup Flow
 
 ```text
-Register Flow:
-User Input (name, email, password)
-        ↓
-Validate Required Fields
-        ↓
-Password → bcrypt.hash()
-        ↓
-Save User to Database
-        ↓
-Generate JWT Token & Return 201 Created
+Signup Request (POST /api/auth/signup)
+   ↓
+verify_signup Middleware (Validates presence, email format, min password length, uniqueness)
+   ↓
+bcryptjs Hashing (bcrypt.hash)
+   ↓
+Save User to Database (Default: role = 'user', account_status = 'active')
+   ↓
+201 Created Response
+```
 
-Login Flow:
-User Input (email, password)
-        ↓
+### 2. Login Flow
+
+```text
+Login Request (POST /api/auth/login)
+   ↓
 Find User by Email
-        ↓
-Password → bcrypt.compare()
-        ↓
-Generate JWT Token via jwt.sign()
-        ↓
-Client Receives Token in Response (200 OK)
+   ↓
+Check Account Status (Must be active)
+   ↓
+bcryptjs Comparison (bcrypt.compare)
+   ↓
+Generate JWT Token (jwt.sign containing id and role)
+   ↓
+200 OK Response with Token
+```
 
-Protected Route Flow:
-Client Request with "Authorization: Bearer <token>"
-        ↓
-middlewares/authJwt.js Middleware
-        ↓
-jwt.verify(token, JWT_SECRET)
-        ↓
-Attach user to req.user & Call next()
-        ↓
-Protected Route Handler (e.g. GET /api/auth/profile)
-        ↓
-Return User Profile Data (200 OK)
+### 3. Protected Profile Flow
+
+```text
+GET /api/auth/profile
+   ↓
+authJwt.js (Verify JWT Token)
+   ↓
+account_status.js (Verify status === 'active')
+   ↓
+authController.getProfile (Return profile data without password)
+```
+
+### 4. Admin-Only Route Flow
+
+```text
+GET /api/admin/dashboard
+   ↓
+authJwt.js (Verify JWT Token)
+   ↓
+account_status.js (Verify status === 'active')
+   ↓
+role.js (Verify req.user.role === 'admin')
+   ↓
+adminController.getDashboard (Return Admin Dashboard Data)
 ```
 
 ---
 
 ## 🛠️ API Endpoints
 
-| Method | Endpoint | Description | Auth Required | Status Codes |
+| Method | Endpoint | Description | Middleware Stack | Expected Status |
 | :--- | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Register a new user | No | `201`, `400`, `409`, `500` |
-| `POST` | `/api/auth/login` | Login user & receive JWT token | No | `200`, `400`, `401`, `500` |
-| `GET` | `/api/auth/profile` | Get authenticated user profile | Yes (`Bearer <token>`) | `200`, `401`, `404`, `500` |
+| `POST` | `/api/auth/signup` | Register new user | `verifySignup` | `201`, `400`, `500` |
+| `POST` | `/api/auth/login` | Login user & get JWT | None | `200`, `400`, `401`, `403` |
+| `GET` | `/api/auth/profile` | Get user profile | `verifyToken` → `checkAccountStatus` | `200`, `401`, `403`, `404` |
+| `GET` | `/api/admin/dashboard` | Admin dashboard | `verifyToken` → `checkAccountStatus` → `authorizeRole("admin")` | `200`, `401`, `403` |
 
 ---
 
@@ -131,7 +147,7 @@ npm install
 
 ### 2. Configure Environment Variables
 
-Create or update `.env`:
+Create or verify `.env`:
 
 ```env
 PORT=5000
@@ -145,9 +161,18 @@ CLIENT_ORIGIN=http://localhost:5173
 # Production mode
 npm start
 
-# Development mode (with auto-reload)
+# Development mode
 npm run dev
 ```
+
+---
+
+## 👥 Seeded / Default Users for Testing
+
+| Name | Email | Password | Role | Account Status |
+| :--- | :--- | :--- | :--- | :--- |
+| Admin User | `admin@example.com` | `Admin123` | `admin` | `active` |
+| Normal User | Create via `POST /api/auth/signup` | User specified | `user` | `active` |
 
 ---
 
@@ -158,29 +183,35 @@ Import `postman/Week-10-API-Collection.json` into Postman.
 ### Collection Layout
 
 ```text
-Auth
-├── Register
-├── Login
+Authentication
+├── Signup
+├── Login (Saves {{token}})
+├── Login - Admin (Saves {{adminToken}})
 └── Profile
 
+Admin Authorization
+├── Admin Dashboard (Expected: 200 with {{adminToken}})
+├── Admin Dashboard - Normal User (Expected: 403 with {{token}})
+└── Admin Dashboard - Invalid Token (Expected: 401)
+
+Signup Validation
+├── Missing Name (400 Bad Request)
+├── Missing Email (400 Bad Request)
+├── Missing Password (400 Bad Request)
+├── Invalid Email (400 Bad Request)
+└── Duplicate Email (400 Bad Request)
+
 Middleware / Authentication Failure Cases
-├── Profile - No Token
-├── Profile - Invalid Token
-├── Login - Wrong Password
-└── Register - Duplicate Email
+├── Profile - No Token (401 Unauthorized)
+├── Profile - Invalid Token (401 Unauthorized)
+└── Login - Wrong Password (401 Unauthorized)
 ```
 
-### Automatic Token Handling in Postman
+### Verification Matrix
 
-The **Login** request has a built-in test script:
-
-```javascript
-if (pm.response.code === 200) {
-    var jsonData = pm.response.json();
-    if (jsonData.token) {
-        pm.collectionVariables.set("token", jsonData.token);
-    }
-}
-```
-
-When you send the **Login** request, the returned token is automatically stored in the `{{token}}` variable and applied to the **Profile** request header (`Authorization: Bearer {{token}}`).
+* **Normal User (`role: "user"`)**:
+  * `/api/auth/profile` → `200 OK`
+  * `/api/admin/dashboard` → `403 Forbidden`
+* **Admin User (`role: "admin"`)**:
+  * `/api/auth/profile` → `200 OK`
+  * `/api/admin/dashboard` → `200 OK`

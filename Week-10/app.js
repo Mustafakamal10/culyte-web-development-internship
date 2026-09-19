@@ -3,6 +3,7 @@ const cors = require("cors");
 const corsOptions = require("./config/corsOptions");
 const requestLogger = require("./middlewares/logger");
 const authRoutes = require("./routes/authRoutes");
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(express.json());
 app.use(requestLogger);
 
 app.use("/api/auth", authRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
