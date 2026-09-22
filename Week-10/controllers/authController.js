@@ -107,8 +107,7 @@ const getProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        account_status: user.account_status,
-        createdAt: user.createdAt
+        account_status: user.account_status
       }
     });
   } catch (error) {
@@ -121,7 +120,6 @@ const getProfile = async (req, res) => {
 
 module.exports = {
   signup,
-  register: signup,
   login,
   getProfile
 };

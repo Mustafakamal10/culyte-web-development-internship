@@ -9,10 +9,19 @@ const users = [
     role: "admin",
     account_status: "active",
     createdAt: new Date().toISOString()
+  },
+  {
+    id: 2,
+    name: "Inactive User",
+    email: "inactive@example.com",
+    password: bcrypt.hashSync("123456", 10),
+    role: "user",
+    account_status: "inactive",
+    createdAt: new Date().toISOString()
   }
 ];
 
-let nextId = 2;
+let nextId = 3;
 
 const findByEmail = (email) => {
   return users.find((user) => user.email === email);
@@ -28,8 +37,8 @@ const create = (userData) => {
     name: userData.name,
     email: userData.email,
     password: userData.password,
-    role: userData.role || "user",
-    account_status: userData.account_status || "active",
+    role: "user",
+    account_status: "active",
     createdAt: new Date().toISOString()
   };
   users.push(newUser);

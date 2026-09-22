@@ -2,7 +2,7 @@ const getDashboard = async (req, res) => {
   try {
     return res.status(200).json({
       success: true,
-      message: "Welcome to the Admin Dashboard",
+      message: "Welcome to the admin dashboard",
       data: {
         admin: {
           id: req.user.id,
