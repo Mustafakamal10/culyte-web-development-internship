@@ -1,9 +1,45 @@
-const { User, Task } = require("../models");
+const { User, Task, Sequelize } = require("../models");
+const { Op } = Sequelize;
 
-const getUsers = async () => {
-  return await User.findAll({
-    include: [{ model: Task, as: "tasks" }]
+const getUsers = async (queryParams = {}) => {
+  const page = parseInt(queryParams.page) || 1;
+  const limit = parseInt(queryParams.limit) || 10;
+  const offset = (page - 1) * limit;
+
+  const where = {};
+
+  // Filtering dynamically
+  if (queryParams.role) {
+    where.role = queryParams.role;
+  }
+  if (queryParams.account_status) {
+    where.account_status = queryParams.account_status;
+  }
+
+  // Searching by name (partial match using LIKE)
+  if (queryParams.search) {
+    where.name = {
+      [Op.like]: `%${queryParams.search}%`
+    };
+  }
+
+  const { count, rows } = await User.findAndCountAll({
+    where,
+    limit,
+    offset,
+    include: [{ model: Task, as: "tasks" }],
+    distinct: true
   });
+
+  const totalPages = Math.ceil(count / limit);
+
+  return {
+    data: rows,
+    page,
+    limit,
+    total: count,
+    totalPages
+  };
 };
 
 const getUserById = async (id) => {
@@ -60,3 +96,4 @@ module.exports = {
   updateUser,
   deleteUser
 };
+

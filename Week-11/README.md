@@ -79,14 +79,25 @@ HTTP Request
 
 ## API Endpoints
 
-### User Endpoints
+### User Endpoints (with Pagination, Filtering & Searching)
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/users` | Fetch all users with associated tasks |
+| `GET` | `/api/users` | Fetch users (supports `page`, `limit`, `role`, `account_status`, `search`) |
 | `GET` | `/api/users/:id` | Fetch a single user by ID |
 | `POST` | `/api/users` | Create a new user |
 | `PUT` | `/api/users/:id` | Update an existing user |
 | `DELETE` | `/api/users/:id` | Delete a user |
+
+#### Query Parameters for `/api/users`:
+- **Pagination**: `?page=1&limit=5`
+- **Filtering**: `?role=admin` or `?account_status=active`
+- **Searching**: `?search=ali` (Partial match on `name` using `LIKE`)
+- **Combined**: `?page=1&limit=5&role=user&search=ali`
+
+### File Upload Endpoint
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `POST` | `/api/upload` | Upload a file via Multer (`file` in form-data) |
 
 ### Task Endpoints
 | Method | Endpoint | Description |
@@ -137,4 +148,10 @@ Server runs at `http://localhost:5000`.
 
 ## Postman Testing
 
-Import `postman/Week-11-Logic-Separation.json` into Postman to test all CRUD routes and error cases.
+Import `postman/Week-11-Logic-Separation.json` into Postman to test all routes:
+- **Pagination, Filtering & Search folder**: 4 pre-configured queries
+- **File Upload folder**: `POST /api/upload` (form-data: `file`)
+- **Users CRUD**: `GET`, `POST`, `PUT`, `DELETE`
+- **Tasks CRUD**: `GET`, `POST`, `PUT`, `DELETE`
+- **Validation & Error Handling**: 400 Bad Request & 404 Not Found scenarios
+
